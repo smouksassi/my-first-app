@@ -1,7 +1,7 @@
 import React from 'react'
 import './pokemon.css'
 
-const samplePokemons = [
+export const samplePokemons = [
   { id: 1, name: "Bulbasaur", type: "Grass", hp: 45, attack: 49 },
   { id: 4, name: "Charmander", type: "Fire", hp: 39, attack: 52 },
   { id: 7, name: "Squirtle", type: "Water", hp: 44, attack: 48 },
@@ -24,18 +24,53 @@ const samplePokemons = [
   { id: 148, name: "Dragonair", type: "Dragon", hp: 61, attack: 84 },
 ];
 
-export default function PokemonCards({ pokemons = samplePokemons }) {
+export default function PokemonCards({ pokemons = samplePokemons, favorites = new Set(), onToggleFavorite = () => {} }) {
+  const maxHP = Math.max(...pokemons.map(p => p.hp), 100)
+  const maxAttack = Math.max(...pokemons.map(p => p.attack), 100)
+
   return (
     <div className="pokemon-grid">
-      {pokemons.map(p => (
-        <div key={p.id} className="pokemon-card">
-          <a href={p.image} target="_blank" rel="noopener noreferrer">
-            <img src={p.image} alt={p.name} />
-          </a>
-          <h3 className="pokemon-name">{p.name} <span className="pokemon-id">#{p.id}</span></h3>
-          <p className="pokemon-type">{p.type}</p>
-        </div>
-      ))}
+      {pokemons.map(p => {
+        const hpPct = Math.round((p.hp / maxHP) * 100)
+        const attackPct = Math.round((p.attack / maxAttack) * 100)
+        const imgUrl = p.image || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png`
+        const isFav = favorites.has && favorites.has(p.id)
+        return (
+          <div key={p.id} className="pokemon-card">
+            <button
+              className={`fav-toggle ${isFav ? 'fav' : ''}`}
+              onClick={(e) => { e.stopPropagation(); e.preventDefault(); onToggleFavorite(p.id) }}
+              aria-label={isFav ? 'Unfavorite' : 'Favorite'}
+            >
+              {isFav ? '♥' : '♡'}
+            </button>
+
+            <a href={imgUrl} target="_blank" rel="noopener noreferrer">
+              <img src={imgUrl} alt={p.name} />
+            </a>
+            <h3 className="pokemon-name">{p.name} <span className="pokemon-id">#{p.id}</span></h3>
+            <p className="pokemon-type">{p.type}</p>
+
+            <div className="stat-bars">
+              <div className="stat">
+                <div className="stat-label">HP</div>
+                <div className="bar">
+                  <div className="bar-fill hp" style={{ width: `${hpPct}%` }}></div>
+                </div>
+                <div className="stat-value">{p.hp}</div>
+              </div>
+
+              <div className="stat">
+                <div className="stat-label">ATK</div>
+                <div className="bar">
+                  <div className="bar-fill attack" style={{ width: `${attackPct}%` }}></div>
+                </div>
+                <div className="stat-value">{p.attack}</div>
+              </div>
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }

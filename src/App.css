@@ -40,3 +40,38 @@
 .read-the-docs {
   color: #888;
 }
+
+filter-pills { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
+.pill { padding:6px 10px; border-radius:999px; background:#eee; border: none; cursor:pointer; }
+.pill.active { background:#0366d6; color:white; box-shadow: 0 1px 0 rgba(0,0,0,0.1); }
+
+
+/* favorite toggle on cards */
+.pokemon-card { position: relative; }
+.fav-toggle {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: none;
+  background: rgba(255,255,255,0.9);
+  padding: 6px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+.fav-toggle.fav { background: #ff6b6b; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+
+/* keep existing stat bar styles intact (these were included earlier) */
+.stat-bars { display:flex; flex-direction: column;gap:8px; justify-content:center; margin-top:8px; }
+.stat {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  gap: 8px;
+}
+.stat-label { font-size:0.75rem; color:#666; width:30px; text-align:left; }
+.bar { width:80px; height:8px; background:#eee; border-radius:4px; overflow:hidden; }
+.bar-fill.hp { background: #48bb78; height:100%; }
+.bar-fill.attack { background: #f6ad55; height:100%; }
+.stat-value { font-size:0.8rem; color:#333; width:30px; text-align:right; }
