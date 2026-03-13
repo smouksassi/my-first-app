@@ -1,0 +1,7 @@
+.pokemon-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; padding: 16px; }
+.pokemon-card { background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.12); padding: 12px; text-align: center; }
+.pokemon-card img { width: 96px; height: 96px; object-fit: contain; }
+.pokemon-name { margin: 8px 0 4px; font-size: 1rem; }
+.pokemon-id { color: #666; font-size: 0.85rem; }
+.pokemon-type { margin: 0; color: #333; font-size: 0.9rem; }
+body { background: #f5f7fb; }
