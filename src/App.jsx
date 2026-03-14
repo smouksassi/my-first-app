@@ -1,7 +1,8 @@
-import { useState, useMemo } from "react";
+// App.jsx
+import { useState, useMemo, useEffect } from "react";
 import "./App.css";
-import * as d3 from "d3";
 import PokemonCards, { samplePokemons } from './PokemonCards'
+import './pokemon.css'
 
 function TypeFilters({ pokemons, favorites, selectedType, onChange }) {
   const types = useMemo(() => {
@@ -11,22 +12,24 @@ function TypeFilters({ pokemons, favorites, selectedType, onChange }) {
 
   const favCount = favorites ? favorites.size ?? 0 : 0;
 
-  // Build final pills: put Favorites after All, keep types after that
-  const pills = ["All", `Favorites (${favCount})`, ...types.filter(t => t !== "All")];
+  // Optionally hide Favorites pill when zero
+  const pills = favCount > 0
+    ? ["All", `Favorites (${favCount})`, ...types.filter(t => t !== "All")]
+    : ["All", ...types.filter(t => t !== "All")];
 
   return (
-    <div className="filter-pills">
-      {pills.map(t => {
-        // We want the selectedType to be "Favorites" when user clicks the favorites pill.
-        const pillValue = t.startsWith("Favorites") ? "Favorites" : t;
-        const isActive = selectedType === pillValue;
+    <div className="filter-pills" role="tablist" aria-label="Type filters">
+      {pills.map(label => {
+        const value = label.startsWith("Favorites") ? "Favorites" : label;
+        const isActive = selectedType === value;
         return (
           <button
-            key={t}
+            key={label}
             className={`pill ${isActive ? 'active' : ''}`}
-            onClick={() => onChange(pillValue)}
+            onClick={() => onChange(value)}
+            aria-pressed={isActive}
           >
-            {t}
+            {label}
           </button>
         );
       })}
@@ -34,42 +37,136 @@ function TypeFilters({ pokemons, favorites, selectedType, onChange }) {
   );
 }
 
+function Controls({ search, setSearch, sortBy, setSortBy, sortDir, setSortDir }) {
+  return (
+    <div className="controls">
+      <input
+        type="search"
+        placeholder="Search Pokémon..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="search-input"
+        aria-label="Search pokemons"
+      />
+
+      <div className="sort-group" role="group" aria-label="Sort options">
+        <label>
+          Sort:
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+            <option value="name">Name</option>
+            <option value="hp">HP</option>
+            <option value="attack">Attack</option>
+          </select>
+        </label>
+
+        <label>
+          <select value={sortDir} onChange={(e) => setSortDir(e.target.value)}>
+            <option value="asc">↑ Asc</option>
+            <option value="desc">↓ Desc</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  );
+}
+
 function App() {
-  const [count, setCount] = useState(0);
-  const [selectedType, setSelectedType] = useState('All')
-  const [favorites, setFavorites] = useState(new Set())
+  const [selectedType, setSelectedType] = useState('All');
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      const raw = localStorage.getItem('favorites');
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch (e) {
+      return new Set();
+    }
+  });
+
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState('name');
+  const [sortDir, setSortDir] = useState('asc');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('favorites', JSON.stringify([...favorites]));
+    } catch (e) {
+      // ignore localStorage errors
+    }
+  }, [favorites]);
 
   const toggleFavorite = (id) => {
     setFavorites(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
+  // Derived filtered + searched + sorted list
   const filtered = useMemo(() => {
-    if (selectedType === 'All') return samplePokemons
-    if (selectedType === 'Favorites') return samplePokemons.filter(p => favorites.has(p.id))
-    return samplePokemons.filter(p => p.type === selectedType)
-  }, [selectedType, favorites])
+    let list = samplePokemons;
+
+    // filter by type / favorites
+    if (selectedType === 'Favorites') {
+      list = list.filter(p => favorites.has(p.id));
+    } else if (selectedType !== 'All') {
+      list = list.filter(p => p.type === selectedType);
+    }
+
+    // search
+    if (search && search.trim() !== '') {
+      const q = search.toLowerCase();
+      list = list.filter(p => `${p.name} ${p.type}`.toLowerCase().includes(q));
+    }
+
+    // sort
+    const s = [...list];
+    s.sort((a, b) => {
+      let av = a[sortBy], bv = b[sortBy];
+      if (sortBy === 'name') {
+        av = av.toLowerCase(); bv = bv.toLowerCase();
+        if (av < bv) return sortDir === 'asc' ? -1 : 1;
+        if (av > bv) return sortDir === 'asc' ? 1 : -1;
+        return 0;
+      } else {
+        // numeric
+        return sortDir === 'asc' ? av - bv : bv - av;
+      }
+    });
+
+    return s;
+  }, [selectedType, favorites, search, sortBy, sortDir]);
 
   return (
-    <>
-      <div></div>
-      <h1>Pokemon Explorer</h1>
+    <div className="app-container">
+      <header>
+        <h1>Pokémon Explorer</h1>
+      </header>
 
- <TypeFilters
-  pokemons={samplePokemons}
-  favorites={favorites}
-  onChange={(type) => setSelectedType(type)}
-  selectedType={selectedType}
-/>
+      <Controls
+        search={search}
+        setSearch={setSearch}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        sortDir={sortDir}
+        setSortDir={setSortDir}
+      />
 
-      <PokemonCards pokemons={filtered} favorites={favorites} onToggleFavorite={toggleFavorite} />
+      <TypeFilters
+        pokemons={samplePokemons}
+        favorites={favorites}
+        selectedType={selectedType}
+        onChange={(type) => setSelectedType(type)}
+      />
 
-      
-    </>
+      <main>
+        <PokemonCards
+          pokemons={filtered}
+          favorites={favorites}
+          onToggleFavorite={toggleFavorite}
+        />
+      </main>
+    </div>
   );
 }
 
